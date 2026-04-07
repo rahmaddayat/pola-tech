@@ -9,7 +9,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "WorkSpace", href: "/workspaces" },
-    { name: "Templates", href: "/templates" },
+    { name: "Templates", href: "/template" },
     { name: "Paket", href: "#pricing" },
     { name: "FAQ", href: "#faq" },
     { name: "Tentang", href: "#about" },
