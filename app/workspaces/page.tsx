@@ -2,37 +2,32 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, Plus, Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Search, Plus, Image as ImageIcon } from "lucide-react";
+import Navbar from "@/app/components/navbar";
 
 export default function WorkspacesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const projects = [
-    { id: 1, title: "Pattern Dummy", date: "21-03-2025" },
-    { id: 2, title: "Pattern Dummy", date: "21-03-2025" },
-    { id: 3, title: "Pattern Dummy", date: "21-03-2025" },
+    { id: 1, title: "Kemeja Formal Pria", date: "21-03-2025" },
+    { id: 2, title: "Gaun Pesta Wanita", date: "18-03-2025" },
+    { id: 3, title: "Blazer Casual", date: "15-03-2025" },
   ];
 
-  return (
-    <div className="min-h-screen bg-white relative">
-      {/* --- TOMBOL RETURN (Sudut Kiri Atas) --- */}
-      <div className="absolute top-8 left-8 z-50">
-        <Link
-          href="/"
-          className="flex items-center justify-center w-12 h-12 bg-white border-2 border-gray-100 rounded-full text-gray-400 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-md transition-all group"
-          title="Kembali ke Home"
-        >
-          <ArrowLeft
-            size={24}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
-        </Link>
-      </div>
+  // Filter projects berdasarkan search query
+  const filteredProjects = projects.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      <main className="max-w-6xl mx-auto px-6 py-20">
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+
+      <main className="max-w-6xl mx-auto px-6 py-12">
         {/* --- HEADER TITLE --- */}
         <div className="mb-8">
           <h1 className="text-3xl font-light text-indigo-600">WorkSpaces</h1>
+          <p className="text-sm text-gray-400 mt-1">Kelola semua proyek desain pola busana Anda</p>
         </div>
 
         {/* --- SEARCH BAR --- */}
@@ -40,7 +35,7 @@ export default function WorkspacesPage() {
           <div className="relative w-full max-w-2xl group">
             <input
               type="text"
-              placeholder="Cari..."
+              placeholder="Cari proyek..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-14 pr-6 py-4 text-xl rounded-full border-2 border-indigo-600 outline-none focus:ring-4 focus:ring-indigo-50 transition-all text-indigo-700 placeholder-indigo-300 shadow-sm"
@@ -70,11 +65,12 @@ export default function WorkspacesPage() {
             </span>
           </Link>
 
-          {/* Render Project Cards */}
-          {projects.map((project) => (
-            <div
+          {/* Render Filtered Project Cards */}
+          {filteredProjects.map((project) => (
+            <Link
               key={project.id}
-              className="flex flex-col aspect-4/3 bg-white border-2 border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              href="/workspaces/design"
+              className="flex flex-col aspect-4/3 bg-white border-2 border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-1 cursor-pointer"
             >
               <div className="flex-1 bg-gray-50 flex items-center justify-center p-8">
                 <ImageIcon
@@ -88,8 +84,16 @@ export default function WorkspacesPage() {
                 <h3 className="text-2xl font-semibold mb-1">{project.title}</h3>
                 <p className="text-sm text-indigo-200">{project.date}</p>
               </div>
-            </div>
+            </Link>
           ))}
+
+          {/* No results message */}
+          {filteredProjects.length === 0 && searchQuery && (
+            <div className="col-span-full text-center py-16 text-gray-400">
+              <Search size={48} className="mx-auto mb-4 text-gray-200" />
+              <p className="text-lg">Tidak ada proyek yang cocok dengan &ldquo;{searchQuery}&rdquo;</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
