@@ -1,13 +1,11 @@
 "use client";
 
 import Navbar from "@/app/components/navbar";
-import { CheckCircle2, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
-
-import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const targets = [
@@ -24,31 +22,30 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      name: "Karen",
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      name: "Rina Kartika",
+      role: "Desainer Indie, Jakarta",
+      text: "PolaTech benar-benar mengubah cara saya bekerja. Dulu saya membuat pola manual di kertas besar, sekarang semuanya digital dan bisa di-edit kapan saja. Hemat waktu luar biasa!",
+      rating: 5,
     },
     {
-      name: "Tony",
-      text: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      name: "Budi Santoso",
+      role: "Pemilik Butik, Bandung",
+      text: "Fitur grading ukuran otomatis sangat membantu produksi kami. Dari satu pola dasar, langsung bisa generate ukuran S sampai XXL tanpa hitung manual. Sangat direkomendasikan!",
+      rating: 5,
     },
     {
-      name: "Sharon M",
-      text: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+      name: "Siti Nurhaliza",
+      role: "Guru SMK Tata Busana, Surabaya",
+      text: "Saya gunakan PolaTech untuk mengajar siswa saya. Interface-nya intuitif dan mudah dipahami bahkan oleh pemula. Ekspor PDF skala 1:1 sangat berguna untuk praktik di kelas.",
+      rating: 4,
     },
   ];
-
-  const router = useRouter();
-
-  const handleDesignClick = () => {
-    // Tambahkan logika di sini (misal: analitik atau pengecekan auth)
-    router.push("/workspaces/design");
-  };
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const faqs = [
     {
-      question: "Apakah Pola.io gratis untuk digunakan?",
+      question: "Apakah PolaTech gratis untuk digunakan?",
       answer:
         "Kami menyediakan paket gratis untuk pemula dengan fitur desain dasar. Untuk fitur profesional seperti ekspor pola industri, kami menyediakan paket berlangganan yang terjangkau.",
     },
@@ -124,6 +121,9 @@ export default function LandingPage() {
     },
   ];
 
+  // Warna avatar untuk testimonials
+  const avatarColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500"];
+
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
       <Navbar />
@@ -142,11 +142,18 @@ export default function LandingPage() {
             nyata dengan cepat.
           </p>
 
-          <Link href="/workspaces/design">
-            <button className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-extrabold text-sm hover:bg-indigo-700 transition-all shadow-xl hover:shadow-indigo-200 active:scale-95">
-              Desain Sekarang
-            </button>
-          </Link>
+          <div className="flex items-center gap-4 flex-wrap">
+            <Link href="/workspaces/design">
+              <button className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-extrabold text-sm hover:bg-indigo-700 transition-all shadow-xl hover:shadow-indigo-200 active:scale-95">
+                Desain Sekarang
+              </button>
+            </Link>
+            <Link href="#pricing">
+              <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-extrabold text-sm border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all active:scale-95">
+                Lihat Paket
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* 2. KOLOM KANAN (Gambar Background Asset) - Ambil 45% lebar */}
@@ -277,29 +284,48 @@ export default function LandingPage() {
 
       {/* --- TESTIMONIALS SECTION --- */}
       <section className="py-24 px-10 bg-gray-50">
-        <h2 className="text-center text-4xl font-bold text-indigo-700 mb-16 uppercase tracking-widest">
-          Apa yang dikatakan oleh pengguna kami?
+        <h2 className="text-center text-3xl md:text-4xl font-bold text-indigo-700 mb-4">
+          Apa Kata Pengguna Kami?
         </h2>
+        <p className="text-center text-gray-500 mb-16 max-w-lg mx-auto">
+          Bergabung dengan ribuan desainer dan penjahit yang telah mempercayai PolaTech
+        </p>
 
         {/* Grid Container */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-stretch">
-          {/* Melakukan map untuk setiap kartu */}
           {testimonials.map((t, i) => (
-            /* KUNCI 1: flex flex-col agar elemen bertumpuk vertikal dan h-full agar sama tinggi */
             <div
               key={i}
-              className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center h-full"
+              className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition-shadow"
             >
-              {/* KUNCI 2: flex-grow agar teks ini mengambil sisa ruang dan menekan elemen di bawahnya */}
-              <p className="italic text-gray-500 mb-8 leading-relaxed text-center grow">
-                "{t.text}"
+              {/* Rating Stars */}
+              <div className="flex gap-1 mb-6">
+                {Array.from({ length: 5 }).map((_, starIdx) => (
+                  <Star
+                    key={starIdx}
+                    size={16}
+                    className={starIdx < t.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"}
+                  />
+                ))}
+              </div>
+
+              {/* Testimoni text */}
+              <p className="italic text-gray-500 mb-8 leading-relaxed grow">
+                &ldquo;{t.text}&rdquo;
               </p>
 
-              {/* Wadah Nama (Fixed di posisi bawah) */}
-              <div className="flex flex-col items-center justify-center mt-auto">
-                <p className="font-bold text-gray-800 text-base leading-none">
-                  • {t.name}
-                </p>
+              {/* User info */}
+              <div className="flex items-center gap-4 mt-auto pt-6 border-t border-gray-50">
+                {/* Avatar */}
+                <div className={`w-12 h-12 rounded-full ${avatarColors[i % avatarColors.length]} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                  {t.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800 text-sm leading-none">
+                    {t.name}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">{t.role}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -310,12 +336,12 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto">
           {/* Header FAQ */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-indigo-700 mb-4 uppercase tracking-wider">
+            <h2 className="text-3xl md:text-4xl font-bold text-indigo-700 mb-4">
               Pertanyaan Sering Diajukan
             </h2>
             <p className="text-gray-500">
               Temukan jawaban cepat untuk pertanyaan umum tentang penggunaan
-              Pola.io
+              PolaTech
             </p>
           </div>
 
@@ -376,33 +402,36 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-sm">
           <div className="space-y-4">
-            <h4 className="font-bold text-xl">Contact Info :</h4>
-            <p className="font-semibold">PolaTech</p>
-            <p className="text-indigo-200">xxxx-xxxx-xxxx</p>
-            <p className="text-indigo-200">xxxx-xxxx-xxxx</p>
+            <h4 className="font-bold text-xl">Contact Info</h4>
+            <p className="font-semibold text-lg">
+              Pola<span className="text-indigo-200">Tech</span>
+            </p>
+            <p className="text-indigo-200">📧 hello@polatech.id</p>
+            <p className="text-indigo-200">📞 +62 812-3456-7890</p>
+            <p className="text-indigo-200">📍 Jakarta, Indonesia</p>
           </div>
           <div className="space-y-4">
             <h4 className="font-bold text-xl">Company</h4>
             <ul className="space-y-2 text-indigo-200">
               <li>
-                <button className="hover:text-white transition-colors">
+                <a href="#about" className="hover:text-white transition-colors">
                   About Us
-                </button>
+                </a>
               </li>
               <li>
-                <button className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors">
                   Affiliate Team
-                </button>
+                </a>
               </li>
               <li>
-                <button className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors">
                   Terms & Conditions
-                </button>
+                </a>
               </li>
               <li>
-                <button className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-white transition-colors">
                   Privacy
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -410,22 +439,27 @@ export default function LandingPage() {
             <h4 className="font-bold text-xl">Follow Us</h4>
             <ul className="space-y-2 text-indigo-200">
               <li>
-                <button className="hover:text-white transition-colors">
-                  youtube.com
-                </button>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  YouTube
+                </a>
               </li>
               <li>
-                <button className="hover:text-white transition-colors">
-                  X.com
-                </button>
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  X (Twitter)
+                </a>
               </li>
               <li>
-                <button className="hover:text-white transition-colors">
-                  Facebook.com
-                </button>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Facebook
+                </a>
               </li>
             </ul>
           </div>
+        </div>
+        
+        {/* Copyright */}
+        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-indigo-500/50 text-center text-indigo-300 text-sm">
+          © {new Date().getFullYear()} PolaTech. All rights reserved.
         </div>
       </footer>
     </div>

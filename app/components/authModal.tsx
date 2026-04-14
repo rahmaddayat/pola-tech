@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import { DUMMY_USERS } from "@/app/lib/placeholder-data";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,123 +12,157 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, initialView = "login" }: AuthModalProps) {
   const [view, setView] = useState<"login" | "signup">(initialView);
+  
+  // Form States
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Sinkronisasi state tampilan saat initialView berubah dari props
   useEffect(() => {
     setView(initialView);
+    // Reset form fields when modal opens/closes
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
   }, [initialView, isOpen]);
+
+  // --- HANDLE LOGIN ---
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    setTimeout(() => {
+      // Ambil user hasil register dari localStorage
+      const registeredUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
+      
+      // Gabungkan data file dengan data dinamis
+      const allUsers = [...DUMMY_USERS, ...registeredUsers];
+      
+      const userFound = allUsers.find(u => u.email === email && u.password === password);
+
+      if (userFound) {
+        alert(`Selamat datang kembali, ${userFound.name}!`);
+        localStorage.setItem("user_session", JSON.stringify(userFound));
+        onClose();
+      } else {
+        alert("Email atau password salah.");
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  // --- HANDLE REGISTER ---
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      alert("Password konfirmasi tidak cocok!");
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const newUser = {
+        id: Date.now().toString(),
+        name: email.split("@")[0], // Dummy name based on email
+        email,
+        password,
+        avatar: `https://ui-avatars.com/api/?name=${email[0]}`
+      };
+
+      // Simpan ke localStorage agar bisa dipakai login
+      const currentRegisters = JSON.parse(localStorage.getItem("registered_users") || "[]");
+      localStorage.setItem("registered_users", JSON.stringify([...currentRegisters, newUser]));
+
+      alert("Akun berhasil dibuat! Data tersimpan di database lokal (browser).");
+      setView("login");
+      setIsLoading(false);
+    }, 1200);
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      {/* --- BACKDROP WITH BLUR (Halaman di belakang blur) --- */}
-      <div 
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity animate-in fade-in"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-      {/* --- MODAL CONTAINER --- */}
+      {/* Modal Box */}
       <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 flex flex-col items-center animate-in fade-in zoom-in duration-300">
-        
-        {/* Tombol Tutup (X) */}
-        <button 
-          onClick={onClose}
-          className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"
-        >
-          {/* <X size={30} strokeWidth={1.5} /> */}
+        <button onClick={onClose} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500">
+          <X size={30} strokeWidth={1.5} />
         </button>
 
-        {view === "login" ? (
-          /* ================= LOGIN VIEW ================= */
-          <>
-            <h2 className="text-3xl font-light text-gray-700 mb-8 mt-4 text-center leading-tight">
-              Hello and Welcome Back!
-            </h2>
-
-            {/* Tombol Facebook */}
-            <button className="text-[#3b5998] hover:scale-110 transition-transform mb-6">
-              {/* <Facebook size={45} fill="currentColor" stroke="none" /> */}
-            </button>
-
-            {/* Pemisah "or" */}
-            <div className="flex items-center w-full mb-8 text-gray-300">
-              <div className="grow h-px bg-gray-100"></div>
-              <span className="px-4 text-sm font-light">or</span>
-              <div className="grow h-px bg-gray-100"></div>
-            </div>
-
-            {/* Input Fields */}
-            <div className="w-full space-y-5">
-              <input type="email" placeholder="Email" className="auth-field" />
-              <div className="relative">
-                <input type="password" placeholder="Password" defaultValue="" className="auth-field text-gray-400" />
-              </div>
-            </div>
-
-            {/* Remember me & Forgot Pass */}
-            <div className="w-full flex items-center justify-between mt-5 mb-10 text-xs">
-              <label className="flex items-center space-x-2 cursor-pointer text-gray-400 group">
-                {/* Checkbox diubah jadi indigo agar selaras */}
-                <input type="checkbox" className="w-4 h-4 border-gray-200 rounded text-indigo-500 focus:ring-0" />
-                <span className="group-hover:text-gray-600 transition-colors">Remember me</span>
-              </label>
-              <button className="text-gray-300 hover:text-gray-500 transition-colors">Forgot password?</button>
-            </div>
-
-            {/* --- TOMBOL SUBMIT (Diubah ke indigo-600) --- */}
-            <button className="auth-submit uppercase">LOG IN</button>
-
-            {/* Navigasi ke Sign Up */}
-            <p className="text-gray-400 text-sm mt-8">
-              Don't have an account?{" "}
-              <button onClick={() => setView("signup")} className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">Sign up!</button>
-            </p>
-          </>
-        ) : (
-          /* ================= SIGN UP VIEW ================= */
-          <>
-            <h2 className="text-4xl font-light text-gray-700 mb-12 mt-4 text-center leading-tight">
-              Create an account
-            </h2>
-
-            {/* Input Fields (Sesuai gambar referensi) */}
-            <div className="w-full space-y-8 pt-2">
-              <input type="email" placeholder="Email *" className="auth-field" />
+        <form onSubmit={view === "login" ? handleLogin : handleRegister} className="w-full flex flex-col items-center">
+          {view === "login" ? (
+            <>
+              <h2 className="text-3xl font-light text-gray-700 mb-8 mt-4">Hello and Welcome Back!</h2>
               
-              <div className="relative pt-2">
-                <input type="password" placeholder="Password *" className="auth-field" />
-                <span className="absolute -bottom-5 right-0 text-[10px] text-gray-300 italic">0 / 20</span>
+
+              <div className="flex items-center w-full mb-8 text-gray-300">
+                <div className="grow h-px bg-gray-100"></div>
+                <span className="px-4 text-sm">or</span>
+                <div className="grow h-px bg-gray-100"></div>
               </div>
 
-              <div className="relative pt-2">
-                <input type="password" placeholder="Password confirmation *" className="auth-field" />
-                <span className="absolute -bottom-5 right-0 text-[10px] text-gray-300 italic">0 / 20</span>
+              <div className="w-full space-y-5">
+                <input 
+                  type="email" placeholder="Email" required className="auth-field"
+                  value={email} onChange={(e) => setEmail(e.target.value)} 
+                />
+                <input 
+                  type="password" placeholder="Password" required className="auth-field"
+                  value={password} onChange={(e) => setPassword(e.target.value)} 
+                />
               </div>
-            </div>
 
-            {/* --- TOMBOL SUBMIT (Diubah ke indigo-600) --- */}
-            <button className="auth-submit mt-14 mb-6 uppercase">
-              CREATE ACCOUNT
+              <div className="w-full flex justify-between mt-5 mb-10 text-xs text-gray-400">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 rounded text-indigo-500 focus:ring-0" />
+                  <span>Remember me</span>
+                </label>
+                <button type="button">Forgot password?</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl font-light text-gray-700 mb-12 mt-4">Create an account</h2>
+              <div className="w-full space-y-8">
+                <input 
+                  type="email" placeholder="Email *" required className="auth-field"
+                  value={email} onChange={(e) => setEmail(e.target.value)} 
+                />
+                <input 
+                  type="password" placeholder="Password *" required className="auth-field"
+                  value={password} onChange={(e) => setPassword(e.target.value)} 
+                />
+                <input 
+                  type="password" placeholder="Password confirmation *" required className="auth-field"
+                  value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} 
+                />
+              </div>
+            </>
+          )}
+
+          <button type="submit" disabled={isLoading} className="auth-submit uppercase">
+            {isLoading ? "Processing..." : view === "login" ? "LOG IN" : "CREATE ACCOUNT"}
+          </button>
+
+          <p className="text-gray-400 text-sm mt-8">
+            {view === "login" ? "Don't have an account? " : "Already have an account? "}
+            <button 
+              type="button" 
+              onClick={() => setView(view === "login" ? "signup" : "login")} 
+              className="text-indigo-600 font-semibold"
+            >
+              {view === "login" ? "Sign up!" : "Sign in!"}
             </button>
-
-            {/* Footer Sign Up */}
-            <div className="text-center space-y-4 pt-2">
-              <p className="text-gray-400 text-[11px] leading-relaxed px-2">
-                By clicking "CREATE ACCOUNT"<br />
-                I agree to PolaTech's <button className="hover:underline">Terms of Service</button>
-              </p>
-              
-              <p className="text-gray-400 text-sm pt-4">
-                Already have an account?{" "}
-                <button onClick={() => setView("login")} className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">Sign in!</button>
-              </p>
-            </div>
-          </>
-        )}
+          </p>
+        </form>
       </div>
 
-      {/* --- STYLES (Menggunakan warna indigo) --- */}
       <style jsx>{`
         .auth-field {
           width: 100%;
@@ -134,36 +170,21 @@ export default function AuthModal({ isOpen, onClose, initialView = "login" }: Au
           border: 1px solid #f3f4f6;
           border-radius: 0.75rem;
           outline: none;
-          font-size: 0.95rem;
-          transition: all 0.2s;
+          color: black;
         }
-        .auth-field:focus {
-          border-color: #a5b4fc; /* indigo-200 saat focus */
-          background-color: #fcfcff;
-        }
-        .auth-field::placeholder {
-          color: #d1d5db;
-        }
+        .auth-field:focus { border-color: #a5b4fc; background-color: #fcfcff; }
         .auth-submit {
           width: 100%;
-          background-color: #4f46e5; /* indigo-600 */
+          background-color: #4f46e5;
           color: white;
           font-weight: 700;
           padding: 1.1rem;
           border-radius: 0.75rem;
-          letter-spacing: 0.05em;
+          margin-top: 2rem;
           transition: all 0.2s;
-          box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); /* Shadow warna indigo */
         }
-        .auth-submit:hover {
-          background-color: #4338ca; /* indigo-700 */
-          transform: translateY(-1px);
-          box-shadow: 0 12px 20px -3px rgba(79, 70, 229, 0.3);
-        }
-        .auth-submit:active {
-          transform: scale(0.98);
-          background-color: #3730a3; /* indigo-800 */
-        }
+        .auth-submit:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-1px); }
+        .auth-submit:disabled { background-color: #9ca3af; cursor: not-allowed; }
       `}</style>
     </div>
   );
