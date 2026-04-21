@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import { Search } from "lucide-react";
-import Navbar from "@/app/components/navbar";
+import Navbar from "@/app/components/ui/navbar";
 import ProjectCard from "@/app/components/projectCard";
 import { templates } from "@/app/lib/placeholder-data";
+import withAuth from "@/app/components/auth/withAuth";
 
-export default function TemplatesPage() {
+function TemplatesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredTemplates = templates.filter((t) =>
@@ -59,3 +60,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+export default withAuth(TemplatesPage);

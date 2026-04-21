@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { LogIn, User, LogOut } from "lucide-react";
 import Link from "next/link";
-import AuthModal from "./authModal";
+import AuthModal from "@/app/components/auth/authModal";
 
 export default function Navbar() {
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "WorkSpace", href: "/workspaces" },
     { name: "Templates", href: "/template" },
-    { name: "Paket", href: "#pricing" },
-    { name: "FAQ", href: "#faq" },
-    { name: "Tentang", href: "#about" },
+    { name: "Paket", href: "/#pricing" },
+    { name: "FAQ", href: "/#faq" },
+    { name: "Tentang", href: "/#about" },
   ];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,7 +71,7 @@ export default function Navbar() {
           {currentUser ? (
             /* --- TAMPILAN KETIKA SUDAH LOGIN --- */
             <div className="flex items-center space-x-4">
-              <div className="flex flex-col items-end hidden sm:flex">
+              <div className="flex flex-col items-end sm:flex">
                 <span className="text-xs font-bold text-gray-900">{currentUser.name}</span>
                 <button 
                   onClick={handleLogout}
