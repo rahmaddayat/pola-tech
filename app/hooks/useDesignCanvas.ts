@@ -8,25 +8,83 @@ export const pocketOffsets: Record<string, string> = {
   none: "translate(0, 0)",
 };
 
+export interface DesignState {
+  body: keyof typeof VARIASI_POLA.body;
+  necklines: keyof typeof VARIASI_POLA.necklines;
+  sleeves: keyof typeof VARIASI_POLA.sleeves;
+  pocket: keyof typeof VARIASI_POLA.pocket;
+  primaryColor: string;
+  pattern: string | null; // Now part of the core state
+}
+
+const initialState: DesignState = {
+  body: "shirt",
+  necklines: "round_neck_binding",
+  sleeves: "short_sleeves",
+  pocket: "none",
+  primaryColor: "#6366f1",
+  pattern: null,
+};
+
 export function useDesignCanvas() {
-  const [body, setBody] = useState<keyof typeof VARIASI_POLA.body>("shirt");
-  const [necklines, setNecklines] = useState<keyof typeof VARIASI_POLA.necklines>("round_neck_binding");
-  const [sleeves, setSleeves] = useState<keyof typeof VARIASI_POLA.sleeves>("short_sleeves");
-  const [pocket, setPocket] = useState<keyof typeof VARIASI_POLA.pocket>("none");
-  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [past, setPast] = useState<DesignState[]>([]);
+  const [present, setPresent] = useState<DesignState>(initialState);
+  const [future, setFuture] = useState<DesignState[]>([]);
 
   const updatePart = (type: string, value: any) => {
+    let key: keyof DesignState | null = null;
+    
     switch (type) {
-      case "Silhouettes": setBody(value); break;
-      case "Necklines": setNecklines(value); break;
-      case "Sleeves": setSleeves(value); break;
-      case "Pockets": setPocket(value); break;
-      case "Color": setPrimaryColor(value); break;
+      case "Silhouettes": key = "body"; break;
+      case "Necklines": key = "necklines"; break;
+      case "Sleeves": key = "sleeves"; break;
+      case "Pockets": key = "pocket"; break;
+      case "Color": key = "primaryColor"; break;
+      case "Pattern": key = "pattern"; break;
+    }
+
+    if (key && present[key] !== value) {
+      const newState = { ...present, [key]: value };
+      
+      setPast([...past, present]);
+      setPresent(newState);
+      setFuture([]); // Clear future on new action
     }
   };
 
+  const undo = () => {
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+    
+    setFuture([present, ...future]);
+    setPresent(previous);
+    setPast(newPast);
+  };
+
+  const redo = () => {
+    if (future.length === 0) return;
+    const next = future[0];
+    const newFuture = future.slice(1);
+    
+    setPast([...past, present]);
+    setPresent(next);
+    setFuture(newFuture);
+  };
+
+  const loadConfig = (config: DesignState) => {
+    setPast([]);
+    setFuture([]);
+    setPresent({ ...initialState, ...config });
+  };
+
   return {
-    states: { body, necklines, sleeves, pocket, primaryColor },
+    states: present,
     updatePart,
+    undo,
+    redo,
+    loadConfig,
+    canUndo: past.length > 0,
+    canRedo: future.length > 0
   };
 }

@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "@/app/components/navbar";
 import ProjectCard from "@/app/components/projectCard";
-import { projects } from "@/app/lib/placeholder-data";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+interface Design {
+  id_design: number;
+  nama_design: string;
+  config: any;
+  updated_at: string;
+}
 
 export default function WorkspacesPage() {
   const router = useRouter();
@@ -14,30 +22,61 @@ export default function WorkspacesPage() {
   // States
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState<"loading" | "unauthorized" | "authorized">("loading");
+  const [designs, setDesigns] = useState<Design[]>([]);
 
-  // --- LOGIKA PROTEKSI AKSES ---
+  // --- LOGIKA PROTEKSI AKSES & FETCH DATA ---
   useEffect(() => {
-    const checkAuth = () => {
-      const session = localStorage.getItem("user_session");
+    const checkAuthAndFetch = async () => {
+      const sessionStr = localStorage.getItem("user_session");
       
-      if (!session) {
+      if (!sessionStr) {
         setStatus("unauthorized");
-        // Redirect ke home setelah 2.5 detik
-        const timer = setTimeout(() => {
-          router.push("/");
-        }, 2500);
-        return () => clearTimeout(timer);
-      } else {
+        setTimeout(() => router.push("/"), 2500);
+        return;
+      }
+      
+      try {
+        const session = JSON.parse(sessionStr);
+        const token = session.token;
+        
+        // 1. Dapatkan daftar workspace
+        const wsRes = await fetch(`${API_URL}/api/workspaces`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (wsRes.status === 401) {
+          throw new Error("Unauthorized");
+        }
+        
+        const wsData = await wsRes.json();
+        const firstWorkspace = wsData.data?.[0];
+        
+        if (firstWorkspace) {
+          // 2. Dapatkan desain dari workspace pertama
+          const designRes = await fetch(`${API_URL}/api/workspaces/${firstWorkspace.id_workspace}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const designData = await designRes.json();
+          if (designData.data?.designs) {
+            setDesigns(designData.data.designs);
+          }
+        }
+        
         setStatus("authorized");
+      } catch (err) {
+        console.error("Gagal mengambil data:", err);
+        localStorage.removeItem("user_session");
+        setStatus("unauthorized");
+        setTimeout(() => router.push("/"), 2500);
       }
     };
 
-    checkAuth();
+    checkAuthAndFetch();
   }, [router]);
 
   // Filter logika
-  const filteredProjects = projects.filter((p) =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProjects = designs.filter((p) =>
+    p.nama_design.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // --- 1. TAMPILAN LOADING (SAAT CEK SESSION) ---
@@ -142,11 +181,12 @@ export default function WorkspacesPage() {
 
           {/* Project List */}
           {filteredProjects.map((project) => (
-            <div key={project.id} className="animate-in fade-in zoom-in duration-500">
+            <div key={project.id_design} className="animate-in fade-in zoom-in duration-500">
               <ProjectCard
-                href={`/workspaces/design`}
-                title={project.title}
-                subtitle={`Terakhir diedit: ${project.date}`}
+                href={`/workspaces/design?id=${project.id_design}`}
+                title={project.nama_design}
+                subtitle={`Terakhir diedit: ${new Date(project.updated_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                config={project.config}
               />
             </div>
           ))}

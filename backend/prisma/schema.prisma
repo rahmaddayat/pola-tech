@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id_user    Int         @id @default(autoincrement())
+  nama       String
+  email      String      @unique
+  password   String
+  role       String      @default("user")
+  created_at DateTime    @default(now())
+
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id_workspace   Int       @id @default(autoincrement())
+  id_user        Int
+  nama_workspace String
+  created_at     DateTime  @default(now())
+
+  user    User     @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  designs Design[]
+}
+
+model Design {
+  id_design    Int      @id @default(autoincrement())
+  id_workspace Int
+  nama_design  String
+  deskripsi    String?
+  config       Json
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  workspace Workspace      @relation(fields: [id_workspace], references: [id_workspace], onDelete: Cascade)
+  details   Design_Detail[]
+}
+
+model Component {
+  id_component   Int    @id @default(autoincrement())
+  nama_component String
+  tipe           String
+
+  details Design_Detail[]
+}
+
+model Design_Detail {
+  id_detail    Int    @id @default(autoincrement())
+  id_design    Int
+  id_component Int
+  value        String
+
+  design    Design    @relation(fields: [id_design], references: [id_design], onDelete: Cascade)
+  component Component @relation(fields: [id_component], references: [id_component])
+}

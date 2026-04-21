@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import {
-  FolderArchive,
   Shirt,
   FileDown,
   Square,
@@ -10,19 +9,191 @@ import {
   RotateCcw,
   RotateCw,
   X,
+  Loader2,
+  ArrowLeft,
+  Check,
+  Save,
 } from "lucide-react";
 import { VARIASI_POLA } from "@/app/constants/patterns";
 import { useDesignCanvas, pocketOffsets } from "@/app/hooks/useDesignCanvas";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function DesignDashboard() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+// Toast notification component
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium animate-in slide-in-from-top-4 fade-in duration-300 ${
+      type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+    }`}>
+      {type === "success" ? <Check size={18} /> : <X size={18} />}
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function DesignDashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const designId = searchParams.get("id");
+
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>("Color");
-  
-  // State baru untuk melacak pattern yang aktif
-  const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState("Untitled Project");
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Inisialisasi Logika
-  const { states, updatePart } = useDesignCanvas();
+  const svgRef = React.useRef<SVGSVGElement>(null);
+
+  // Pattern is now inside useDesignCanvas (states.pattern)
+  const { states, updatePart, undo, redo, canUndo, canRedo, loadConfig } = useDesignCanvas();
+
+  // Load existing design from backend
+  useEffect(() => {
+    if (!designId) return;
+
+    const fetchDesign = async () => {
+      try {
+        const sessionStr = localStorage.getItem("user_session");
+        if (!sessionStr) return;
+        const session = JSON.parse(sessionStr);
+
+        const res = await fetch(`${API_URL}/api/designs/detail/${designId}`, {
+          headers: { Authorization: `Bearer ${session.token}` },
+        });
+
+        if (res.ok) {
+          const { data } = await res.json();
+          setProjectName(data.nama_design);
+          if (data.config) {
+            loadConfig(data.config);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load design:", err);
+      }
+    };
+
+    fetchDesign();
+  }, [designId]);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+  };
+
+  const handleDownload = () => {
+    if (!svgRef.current) return;
+    const svgData = new XMLSerializer().serializeToString(svgRef.current);
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${projectName.toLowerCase().replace(/\s+/g, "-")}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("Desain berhasil diunduh!", "success");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const sessionStr = localStorage.getItem("user_session");
+      if (!sessionStr) {
+        showToast("Sesi tidak ditemukan. Silakan login kembali.", "error");
+        setTimeout(() => router.push("/"), 1500);
+        return;
+      }
+
+      const session = JSON.parse(sessionStr);
+      const token = session.token;
+
+      if (!token) {
+        showToast("Token tidak ditemukan. Silakan login ulang.", "error");
+        setTimeout(() => router.push("/"), 1500);
+        return;
+      }
+
+      // Step 1: Get or create workspace
+      const wsRes = await fetch(`${API_URL}/api/workspaces`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (wsRes.status === 401) {
+        showToast("Sesi habis. Silakan login ulang.", "error");
+        localStorage.removeItem("user_session");
+        setTimeout(() => router.push("/"), 1500);
+        return;
+      }
+
+      const wsData = await wsRes.json();
+      let workspaceId = wsData.data?.[0]?.id_workspace;
+
+      if (!workspaceId) {
+        const createWsRes = await fetch(`${API_URL}/api/workspaces`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ nama_workspace: "Default Workspace" }),
+        });
+        const newWs = await createWsRes.json();
+        workspaceId = newWs.data?.id_workspace;
+      }
+
+      if (!workspaceId) {
+        throw new Error("Gagal membuat workspace.");
+      }
+
+      // Step 2: Save or Update design
+      // states already contains pattern — no need to merge separately
+      let res;
+      if (designId) {
+        res = await fetch(`${API_URL}/api/designs/${designId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            nama_design: projectName || "Untitled Design",
+            config: states,
+          }),
+        });
+      } else {
+        res = await fetch(`${API_URL}/api/designs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            id_workspace: workspaceId,
+            nama_design: projectName || "Untitled Design",
+            config: states,
+          }),
+        });
+      }
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        const errorDetail = result.errors
+          ? result.errors.map((e: any) => `${e.field}: ${e.message}`).join(", ")
+          : result.message || "Gagal menyimpan.";
+        throw new Error(errorDetail);
+      }
+
+      showToast("Desain berhasil disimpan ke database!", "success");
+
+      if (!designId && result.data?.id_design) {
+        router.replace(`/workspaces/design?id=${result.data.id_design}`);
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      showToast(err.message || "Gagal menyimpan. Pastikan backend menyala.", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const toolOptions: Record<string, any> = {
     Silhouettes: VARIASI_POLA.body,
@@ -62,18 +233,11 @@ export default function DesignDashboard() {
     { id: "p_grid", name: "Fine Grid" },
   ];
 
-  // Helper render path yang dimodifikasi untuk mendukung URL Pattern
-  const renderPaths = (
-    data: any,
-    color: string,
-    stroke: string,
-    width: string,
-  ) => {
+  // Render SVG paths — uses states.pattern for fill
+  const renderPaths = (data: any, color: string, stroke: string, width: string) => {
     if (!data) return null;
     const paths = Array.isArray(data) ? data : [data];
-    
-    // Logika penentuan fill: Jika ada pattern terpilih, gunakan url(#id)
-    const fillValue = selectedPattern ? `url(#${selectedPattern})` : color;
+    const fillValue = states.pattern ? `url(#${states.pattern})` : color;
 
     return paths.map((d, index) => (
       <path
@@ -89,34 +253,85 @@ export default function DesignDashboard() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden font-sans text-gray-800">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* --- TOP NAVBAR --- */}
       <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-30">
-        <div className="flex items-center space-x-6">
-          <div className="font-bold text-xl text-indigo-600 tracking-tight border-r pr-6 border-gray-100">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => router.push("/workspaces")}
+            className="group flex items-center gap-2 px-3 py-2 -ml-1 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
+            title="Kembali ke Workspaces"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform duration-200" />
+            <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline">Kembali</span>
+          </button>
+
+          <div className="h-8 w-px bg-gray-200" />
+
+          <div className="font-bold text-xl text-indigo-600 tracking-tight">
             <span className="font-bold text-xl text-black tracking-tight">Pola</span>
             Tech
           </div>
+
+          <div className="h-8 w-px bg-gray-200" />
+
           <div className="flex items-center">
             <input
               type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
               placeholder="Untitled Project"
               className="text-sm font-medium text-gray-600 bg-transparent border-none focus:ring-2 focus:ring-indigo-100 rounded-md px-3 py-1 outline-none hover:bg-gray-50 transition-all w-48"
             />
           </div>
-          <div className="flex items-center space-x-4 border-l pl-6 border-gray-100">
-            {[
-              { name: "Design", icon: <FolderArchive size={20} /> },
-              { name: "Undo", icon: <RotateCcw size={20} /> },
-              { name: "Redo", icon: <RotateCw size={20} /> },
-              { name: "Download", icon: <FileDown size={20} /> },
-            ].map((btn) => (
-              <button key={btn.name} className="flex flex-col items-center group transition-colors px-2">
-                <div className="p-2 group-hover:bg-gray-100 rounded-full text-gray-600 group-hover:text-indigo-600">
-                  {btn.icon}
-                </div>
-                <span className="text-[10px] font-medium text-gray-500 group-hover:text-indigo-600">{btn.name}</span>
-              </button>
-            ))}
+
+          <div className="h-8 w-px bg-gray-200" />
+
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            >
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {isSaving ? "Menyimpan..." : "Simpan"}
+            </button>
+
+            <div className="h-8 w-px bg-gray-200 mx-2" />
+
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo"
+              className={`p-2.5 rounded-xl transition-all duration-200 ${
+                canUndo ? "text-gray-500 hover:bg-gray-100 hover:text-indigo-600 active:scale-90" : "text-gray-200 cursor-not-allowed"
+              }`}
+            >
+              <RotateCcw size={18} />
+            </button>
+
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo"
+              className={`p-2.5 rounded-xl transition-all duration-200 ${
+                canRedo ? "text-gray-500 hover:bg-gray-100 hover:text-indigo-600 active:scale-90" : "text-gray-200 cursor-not-allowed"
+              }`}
+            >
+              <RotateCw size={18} />
+            </button>
+
+            <div className="h-8 w-px bg-gray-200 mx-2" />
+
+            <button
+              onClick={handleDownload}
+              title="Download SVG"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 active:scale-95 transition-all duration-200"
+            >
+              <FileDown size={18} />
+              <span className="text-xs font-semibold hidden sm:inline">Export</span>
+            </button>
           </div>
         </div>
       </header>
@@ -154,24 +369,25 @@ export default function DesignDashboard() {
               </button>
             </div>
             <div className="grid grid-cols-4 gap-3">
-              {activeTool && Object.keys(toolOptions[activeTool]).map((optionKey) => (
-                <button
-                  key={optionKey}
-                  onClick={() => updatePart(activeTool, optionKey)}
-                  className={`flex flex-col items-center justify-center aspect-square rounded-lg border transition-all group ${
-                    states[activeTool.toLowerCase().replace("silhouettes", "body") as keyof typeof states] === optionKey
-                      ? "border-indigo-500 bg-indigo-50"
-                      : "bg-gray-50 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50"
-                  }`}
-                >
-                  <div className="w-8 h-8 bg-white rounded border border-gray-200 mb-2 flex items-center justify-center">
-                    <Shirt size={14} className="text-gray-300 group-hover:text-indigo-400" />
-                  </div>
-                  <span className="text-[7px] font-bold text-gray-500 text-center leading-tight px-1 uppercase">
-                    {optionKey.replace(/_/g, " ")}
-                  </span>
-                </button>
-              ))}
+              {activeTool &&
+                Object.keys(toolOptions[activeTool]).map((optionKey) => (
+                  <button
+                    key={optionKey}
+                    onClick={() => updatePart(activeTool, optionKey)}
+                    className={`flex flex-col items-center justify-center aspect-square rounded-lg border transition-all group ${
+                      states[activeTool.toLowerCase().replace("silhouettes", "body") as keyof typeof states] === optionKey
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "bg-gray-50 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50"
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-white rounded border border-gray-200 mb-2 flex items-center justify-center">
+                      <Shirt size={14} className="text-gray-300 group-hover:text-indigo-400" />
+                    </div>
+                    <span className="text-[7px] font-bold text-gray-500 text-center leading-tight px-1 uppercase">
+                      {optionKey.replace(/_/g, " ")}
+                    </span>
+                  </button>
+                ))}
             </div>
           </div>
         </div>
@@ -179,8 +395,7 @@ export default function DesignDashboard() {
         {/* --- MAIN CANVAS AREA --- */}
         <main className="flex-1 relative bg-[#f8f9fa] flex items-center justify-center p-8 transition-all duration-300">
           <div className="w-full max-w-3xl aspect-4/3 bg-white shadow-xl rounded-lg border border-gray-200 relative overflow-hidden flex flex-col items-center justify-center">
-            <svg width="100%" height="80%" viewBox="0 0 100 120" className="drop-shadow-2xl">
-              {/* --- DEFINISI PATTERN --- */}
+            <svg ref={svgRef} width="100%" height="80%" viewBox="0 0 100 120" className="drop-shadow-2xl">
               <defs>
                 <pattern id="p_stripes" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                   <rect width="4" height="4" fill={states.primaryColor} />
@@ -270,13 +485,13 @@ export default function DesignDashboard() {
               {activeCategory === "Color" && (
                 <div className="grid grid-cols-5 gap-y-5 gap-x-2">
                   {colors.map((color) => {
-                    const isColorActive = states.primaryColor === color.hex && !selectedPattern;
+                    const isColorActive = states.primaryColor === color.hex;
                     return (
                       <div key={color.hex} className="flex flex-col items-center space-y-1">
                         <button
                           onClick={() => {
+                            // Only change color — do NOT touch pattern
                             updatePart("Color", color.hex);
-                            setSelectedPattern(null); // Reset pattern jika pilih warna solid
                           }}
                           className={`w-10 h-10 rounded-full border-2 transition-all duration-200 active:scale-90 shadow-sm ${
                             isColorActive ? "border-indigo-600 scale-110 ring-2 ring-indigo-100" : "border-white hover:border-gray-200"
@@ -284,7 +499,11 @@ export default function DesignDashboard() {
                           style={{ backgroundColor: color.hex }}
                           title={color.name}
                         />
-                        <span className={`text-[8px] font-medium text-center w-12 truncate ${isColorActive ? "text-indigo-600 font-bold" : "text-gray-400"}`}>
+                        <span
+                          className={`text-[8px] font-medium text-center w-12 truncate ${
+                            isColorActive ? "text-indigo-600 font-bold" : "text-gray-400"
+                          }`}
+                        >
                           {color.name}
                         </span>
                       </div>
@@ -296,26 +515,31 @@ export default function DesignDashboard() {
               {/* --- KATEGORI PATTERN --- */}
               {activeCategory === "pattern" && (
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Opsi Tanpa Pattern (Solid) */}
-                  <button 
-                    onClick={() => setSelectedPattern(null)}
-                    className={`col-span-2 p-2 rounded-lg border text-[10px] font-bold transition-all ${!selectedPattern ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-400'}`}
+                  <button
+                    onClick={() => updatePart("Pattern", null)}
+                    className={`col-span-2 p-2 rounded-lg border text-[10px] font-bold transition-all ${
+                      !states.pattern ? "bg-indigo-600 text-white border-indigo-600" : "bg-gray-50 text-gray-400"
+                    }`}
                   >
                     SOLID COLOR ONLY
                   </button>
-                  
+
                   {patterns.map((p) => (
                     <button
                       key={p.id}
-                      onClick={() => setSelectedPattern(p.id)}
+                      onClick={() => updatePart("Pattern", p.id)}
                       className={`flex items-center space-x-3 p-2 rounded-lg border transition-all group ${
-                        selectedPattern === p.id ? "border-indigo-500 bg-indigo-50" : "bg-gray-50 border-gray-100 hover:bg-indigo-50 hover:border-indigo-200"
+                        states.pattern === p.id
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "bg-gray-50 border-gray-100 hover:bg-indigo-50 hover:border-indigo-200"
                       }`}
                     >
                       <div className="w-8 h-8 rounded border border-gray-200 flex-shrink-0 overflow-hidden bg-white">
-                         <svg width="100%" height="100%"><rect width="100%" height="100%" fill={`url(#${p.id})`} /></svg>
+                        <svg width="100%" height="100%">
+                          <rect width="100%" height="100%" fill={`url(#${p.id})`} />
+                        </svg>
                       </div>
-                      <span className={`text-[10px] font-semibold truncate ${selectedPattern === p.id ? 'text-indigo-600' : 'text-gray-600'}`}>
+                      <span className={`text-[10px] font-semibold truncate ${states.pattern === p.id ? "text-indigo-600" : "text-gray-600"}`}>
                         {p.name}
                       </span>
                     </button>
@@ -327,5 +551,13 @@ export default function DesignDashboard() {
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function DesignDashboard() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-indigo-600" size={40} /></div>}>
+      <DesignDashboardContent />
+    </Suspense>
   );
 }
