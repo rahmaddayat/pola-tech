@@ -61,6 +61,7 @@ export default function AuthModal({ isOpen, onClose, initialView = "login" }: Au
           name: data.user.nama,
           email: data.user.email,
           role: data.user.role,
+          plan: data.user.plan || "lite",
           token: data.token,
         })
       );
@@ -203,8 +204,12 @@ export default function AuthModal({ isOpen, onClose, initialView = "login" }: Au
           )}
 
           <button type="submit" disabled={isLoading} className="auth-submit uppercase flex items-center justify-center gap-2">
-            {isLoading && <Loader2 size={18} className="animate-spin" />}
-            {isLoading ? "Processing..." : view === "login" ? "LOG IN" : "CREATE ACCOUNT"}
+            {isLoading && (
+              <span className="flex items-center">
+                <Loader2 size={18} className="animate-spin" />
+              </span>
+            )}
+            <span>{isLoading ? "Processing..." : view === "login" ? "LOG IN" : "CREATE ACCOUNT"}</span>
           </button>
 
           <p className="text-gray-400 text-sm mt-8">

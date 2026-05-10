@@ -52,7 +52,7 @@ const syncDesignDetails = async (designId, config) => {
  */
 const createDesign = async (req, res, next) => {
   try {
-    const { id_workspace, nama_design, deskripsi, config } = req.body;
+    const { id_workspace, nama_design, deskripsi, config, canvas_data } = req.body;
     const { id_user } = req.user;
 
     // Verify workspace belongs to user
@@ -89,6 +89,7 @@ const createDesign = async (req, res, next) => {
         nama_design,
         deskripsi: deskripsi || null,
         config,
+        canvas_data: canvas_data || null,
       },
     });
 
@@ -239,7 +240,7 @@ const updateDesign = async (req, res, next) => {
   try {
     const designId = parseInt(req.params.id, 10);
     const { id_user } = req.user;
-    const { nama_design, deskripsi, config } = req.body;
+    const { nama_design, deskripsi, config, canvas_data } = req.body;
 
     // Fetch existing + verify ownership
     const existing = await prisma.design.findFirst({
@@ -285,6 +286,7 @@ const updateDesign = async (req, res, next) => {
     if (nama_design !== undefined) updateData.nama_design = nama_design;
     if (deskripsi !== undefined) updateData.deskripsi = deskripsi;
     if (config !== undefined) updateData.config = config;
+    if (canvas_data !== undefined) updateData.canvas_data = canvas_data;
 
     const updated = await prisma.design.update({
       where: { id_design: designId },

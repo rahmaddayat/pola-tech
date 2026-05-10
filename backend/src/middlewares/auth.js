@@ -1,11 +1,12 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config/env");
+const prisma = require("../lib/prisma");
 
 /**
  * JWT Authentication Middleware
- * Verifies Bearer token and attaches req.user = { id_user, email, role }
+ * Verifies Bearer token and attaches req.user = { id_user, email, role, plan }
  */
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -19,10 +20,25 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Fetch fresh plan from database
+    const user = await prisma.user.findUnique({
+      where: { id_user: decoded.id_user },
+      select: { id_user: true, email: true, role: true, plan: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not found.",
+      });
+    }
+
     req.user = {
-      id_user: decoded.id_user,
-      email: decoded.email,
-      role: decoded.role,
+      id_user: user.id_user,
+      email: user.email,
+      role: user.role,
+      plan: user.plan || "lite",
     };
     next();
   } catch (err) {

@@ -36,6 +36,7 @@ const register = async (req, res, next) => {
         nama: true,
         email: true,
         role: true,
+        plan: true,
         created_at: true,
       },
     });
@@ -99,6 +100,7 @@ const login = async (req, res, next) => {
         nama: user.nama,
         email: user.email,
         role: user.role,
+        plan: user.plan || "lite",
         created_at: user.created_at,
       },
       token,

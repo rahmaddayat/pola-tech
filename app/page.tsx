@@ -5,7 +5,9 @@ import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle, Loader2 } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function LandingPage() {
   const targets = [
@@ -70,9 +72,44 @@ export default function LandingPage() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
+  const [planMsg, setPlanMsg] = useState<string | null>(null);
+
+  const handleSelectPlan = async (planKey: string) => {
+    const sessionStr = localStorage.getItem("user_session");
+    if (!sessionStr) {
+      setPlanMsg("Silakan login terlebih dahulu untuk memilih paket.");
+      setTimeout(() => setPlanMsg(null), 3000);
+      return;
+    }
+    setSelectingPlan(planKey);
+    try {
+      const session = JSON.parse(sessionStr);
+      const res = await fetch(`${API_URL}/api/plan`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ plan: planKey }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        session.plan = planKey;
+        localStorage.setItem("user_session", JSON.stringify(session));
+        setPlanMsg(`Paket ${planKey.toUpperCase()} berhasil diaktifkan!`);
+      } else {
+        setPlanMsg(data.message || "Gagal mengubah paket.");
+      }
+    } catch {
+      setPlanMsg("Server tidak merespons.");
+    } finally {
+      setSelectingPlan(null);
+      setTimeout(() => setPlanMsg(null), 3000);
+    }
+  };
+
   const plans = [
     {
       title: "LITE",
+      key: "lite",
       price: "19",
       subtitle: "Cocok untuk hobi & pemula",
       features: [
@@ -82,13 +119,14 @@ export default function LandingPage() {
         { text: "Custom Fabric Upload", active: true },
         { text: "Lisensi Komersial", active: false },
         { text: "Fitur Grading Ukuran", active: false },
-        { text: "Prioritas Customer Support", active: false },
+        { text: "AI Fashion Assistant", active: false },
       ],
       buttonText: "PILIH LITE",
       isHighlighted: false,
     },
     {
       title: "PRO",
+      key: "pro",
       price: "39",
       subtitle: "Untuk penjahit & desainer indie",
       features: [
@@ -98,23 +136,24 @@ export default function LandingPage() {
         { text: "Fitur Grading Ukuran Otomatis", active: true },
         { text: "Lisensi Komersial", active: true },
         { text: "Custom Fabric Upload", active: true },
-        { text: "Prioritas Customer Support", active: false },
+        { text: "AI Fashion Assistant", active: false },
       ],
       buttonText: "PILIH PRO",
-      isHighlighted: true, // Tag Best Value
+      isHighlighted: true,
     },
     {
       title: "BUSINESS",
+      key: "business",
       price: "59",
       subtitle: "Solusi untuk butik & konveksi",
       features: [
         { text: "Semua Fitur Paket PRO", active: true },
-        { text: "Multi-User (Hingga 3 Akun)", active: true },
-        { text: "Custom Brand Watermark", active: true },
+        { text: "Canvas Drawing (Line, Rect, Circle)", isNew: true, active: true },
+        { text: "AI Fashion Assistant", active: true },
         { text: "Laporan Penggunaan Bahan", active: true },
-        { text: "Prioritas Customer Support 24/7", active: true },
+        { text: "Custom Brand Watermark", active: true },
+        { text: "Multi-User (Hingga 3 Akun)", active: true },
         { text: "Akses Early-Bird Fitur Baru", active: true },
-        { text: "Konsultasi Teknis Bulanan", active: true },
       ],
       buttonText: "PILIH BUSINESS",
       isHighlighted: false,
@@ -163,6 +202,7 @@ export default function LandingPage() {
             src="/design_pattern_bg.jpg" // GANTI DENGAN PATH ASSET ANDA
             alt="Fashion Design Pattern Process"
             fill // Membuat gambar memenuhi container pembungkusnya
+            sizes="(max-width: 768px) 100vw, 45vw"
             quality={100} // Jaga kualitas gambar tinggi
             className="object-cover object-center" // Penting agar gambar memotong rapi, bukan gepeng
             priority // Prioritaskan loading gambar ini
@@ -268,14 +308,20 @@ export default function LandingPage() {
 
                 {/* Tombol Aksi */}
                 <button
-                  className={`w-full font-bold py-4 rounded-2xl text-sm transition-all active:scale-95 ${
+                  onClick={() => handleSelectPlan(plan.key)}
+                  disabled={selectingPlan !== null}
+                  className={`w-full font-bold py-4 rounded-2xl text-sm transition-all active:scale-95 flex items-center justify-center gap-2 ${
                     plan.isHighlighted
                       ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
-                  {plan.buttonText}
+                  {selectingPlan === plan.key && <Loader2 size={16} className="animate-spin" />}
+                  <span>{plan.buttonText}</span>
                 </button>
+                {planMsg && index === plans.findIndex(p => p.key === selectingPlan) && (
+                  <p className="text-xs text-center mt-2 text-emerald-600 font-medium">{planMsg}</p>
+                )}
               </div>
             ))}
           </div>

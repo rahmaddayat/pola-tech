@@ -16,6 +16,8 @@ model User {
   email      String      @unique
   password   String
   role       String      @default("user")
+  plan       String      @default("lite")
+  watermark_url String?
   created_at DateTime    @default(now())
 
   workspaces Workspace[]
@@ -37,6 +39,7 @@ model Design {
   nama_design  String
   deskripsi    String?
   config       Json
+  canvas_data  Json?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 

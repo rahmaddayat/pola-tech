@@ -6,6 +6,8 @@ const { FRONTEND_URL, NODE_ENV } = require("./config/env");
 const authRoutes = require("./routes/authRoutes");
 const workspaceRoutes = require("./routes/workspaceRoutes");
 const designRoutes = require("./routes/designRoutes");
+const planRoutes = require("./routes/planRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 
@@ -37,6 +39,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/designs", designRoutes);
+app.use("/api/plan", planRoutes);
+app.use("/api/ai", aiRoutes);
 
 // ─── 404 HANDLER ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

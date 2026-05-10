@@ -8,6 +8,7 @@ const {
 } = require("../controllers/designController");
 const { authenticate } = require("../middlewares/auth");
 const { validate } = require("../middlewares/validate");
+const { checkDesignLimit } = require("../middlewares/checkPlan");
 const {
   createDesignSchema,
   updateDesignSchema,
@@ -19,7 +20,7 @@ const router = Router();
 router.use(authenticate);
 
 // POST /api/designs               — Create design
-router.post("/", validate(createDesignSchema), createDesign);
+router.post("/", validate(createDesignSchema), checkDesignLimit, createDesign);
 
 // GET /api/designs/:workspace_id  — List designs in workspace (paginated + searchable)
 router.get("/:workspace_id", getDesigns);

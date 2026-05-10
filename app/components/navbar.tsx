@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { LogIn, User, LogOut } from "lucide-react";
+import { LogIn, User, LogOut, Crown } from "lucide-react";
 import Link from "next/link";
 import AuthModal from "./authModal";
+import { PLAN_LABELS, PLAN_COLORS, PlanType } from "@/app/lib/planUtils";
 
 export default function Navbar() {
   const navLinks = [
@@ -72,7 +73,12 @@ export default function Navbar() {
             /* --- TAMPILAN KETIKA SUDAH LOGIN --- */
             <div className="flex items-center space-x-4">
               <div className="flex flex-col items-end hidden sm:flex">
-                <span className="text-xs font-bold text-gray-900">{currentUser.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-900">{currentUser.name}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${PLAN_COLORS[(currentUser.plan as PlanType) || "lite"]}`}>
+                    {PLAN_LABELS[(currentUser.plan as PlanType) || "lite"]}
+                  </span>
+                </div>
                 <button 
                   onClick={handleLogout}
                   className="text-[10px] text-red-500 hover:underline flex items-center"
