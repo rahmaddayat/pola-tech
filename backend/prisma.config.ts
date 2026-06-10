@@ -5,8 +5,7 @@ export default defineConfig({
   earlyAccess: true,
   schema: "./prisma/schema.prisma",
   datasource: {
-    // URL used by Prisma CLI for migrations / db push (Session/Direct)
-    url: process.env.DIRECT_URL! + "?pgbouncer=true",
+    url: process.env.DATABASE_URL || "file:./dev.db",
   },
   migrations: {
     seed: 'node prisma/seed.js',
