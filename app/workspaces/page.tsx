@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Plus, AlertCircle, Loader2 } from "lucide-react";
+import { Search, Plus, AlertCircle, Loader2, PenTool } from "lucide-react";
 import Navbar from "@/app/components/navbar";
 import ProjectCard from "@/app/components/projectCard";
 
@@ -176,6 +176,22 @@ export default function WorkspacesPage() {
             </div>
             <span className="text-xl font-semibold text-gray-400 group-hover:text-indigo-600">
               New Project
+            </span>
+          </Link>
+
+          {/* Point-by-Point CAD Canvas Card */}
+          <Link
+            href="/workspaces/canvas"
+            className="flex flex-col items-center justify-center aspect-[4/3] bg-gradient-to-br from-indigo-50 to-indigo-100/40 border-2 border-dashed border-indigo-200 rounded-[2rem] hover:border-indigo-500 hover:bg-indigo-50 transition-all group relative overflow-hidden"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center mb-4 group-hover:bg-indigo-700 group-hover:scale-110 transition-all duration-500 shadow-md shadow-indigo-200">
+              <PenTool size={32} className="text-white" />
+            </div>
+            <span className="text-xl font-semibold text-indigo-900 group-hover:text-indigo-600">
+              CAD Canvas (Math)
+            </span>
+            <span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mt-1">
+              Custom Drafting
             </span>
           </Link>
 
