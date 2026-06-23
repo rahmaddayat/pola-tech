@@ -35,6 +35,12 @@ Jawab dengan singkat (maks 3-4 kalimat).`;
       data: { text: responseText }
     });
   } catch (error) {
+    if (error.message && error.message.includes("503 Service Unavailable")) {
+      return res.status(503).json({
+        status: "fail",
+        message: "Server AI sedang sibuk (permintaan tinggi). Silakan coba beberapa saat lagi."
+      });
+    }
     next(error);
   }
 };
@@ -78,6 +84,12 @@ Catatan: x dan y dalam persentase kanvas (0-100). cpNext bersifat opsional untuk
       data: shapeData
     });
   } catch (error) {
+    if (error.message && error.message.includes("503 Service Unavailable")) {
+      return res.status(503).json({
+        status: "fail",
+        message: "Server AI sedang sibuk (permintaan tinggi). Silakan coba beberapa saat lagi."
+      });
+    }
     next(error);
   }
 };

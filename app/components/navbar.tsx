@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { LogIn, User, LogOut, Crown } from "lucide-react";
+import { LogIn, User, LogOut } from "lucide-react";
 import Link from "next/link";
 import AuthModal from "./authModal";
 import { PLAN_LABELS, PLAN_COLORS, PlanType } from "@/app/lib/planUtils";
@@ -27,7 +27,12 @@ export default function Navbar() {
     const checkSession = () => {
       const session = localStorage.getItem("user_session");
       if (session) {
-        setCurrentUser(JSON.parse(session));
+        try {
+          setCurrentUser(JSON.parse(session));
+        } catch {
+          localStorage.removeItem("user_session");
+          setCurrentUser(null);
+        }
       }
     };
 
@@ -72,7 +77,7 @@ export default function Navbar() {
           {currentUser ? (
             /* --- TAMPILAN KETIKA SUDAH LOGIN --- */
             <div className="flex items-center space-x-4">
-              <div className="flex flex-col items-end hidden sm:flex">
+              <div className="hidden sm:flex sm:flex-col sm:items-end">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-gray-900">{currentUser.name}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${PLAN_COLORS[(currentUser.plan as PlanType) || "lite"]}`}>

@@ -288,20 +288,8 @@ function SVGVisualizer() {
   const designId = searchParams.get("id") || searchParams.get("design_id");
 
   // ── State Utama Canvas ────────────────────────────────────────────────────
-  const [layers, setLayers] = useState<Layer[]>(() => [{
-    id: "foundation",
-    name: "Pondasi",
-    kind: "foundation",
-    segments: parsePath(INITIAL_PATH),
-    vertexTypes: {},
-    fillColor: "#6366f1",
-    strokeColor: "#1e1b4b",
-    strokeWidth: 0.5,
-    opacity: 1,
-    visible: true,
-    locked: true,
-  }]);
-  const [activeLayerId, setActiveLayerId] = useState("foundation");
+  const [layers, setLayers] = useState<Layer[]>([]);
+  const [activeLayerId, setActiveLayerId] = useState<string>("");
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [showGrid, setShowGrid] = useState(true);
@@ -325,7 +313,7 @@ function SVGVisualizer() {
 
   // ── Undo/Redo ─────────────────────────────────────────────────────────────
   const [history, setHistory] = useState<Snapshot[]>([
-    { layers: layers.map(deepCloneLayer), activeLayerId: "foundation" }
+    { layers: [], activeLayerId: "" }
   ]);
   const [historyIdx, setHistoryIdx] = useState(0);
   const dragStartLayers = useRef<Layer[] | null>(null);
@@ -536,9 +524,20 @@ function SVGVisualizer() {
 
     setIsAiLoading(true);
     try {
+      const sessionStr = localStorage.getItem("user_session");
+      let token = "";
+      if (sessionStr) {
+        try {
+          token = JSON.parse(sessionStr).token;
+        } catch (e) {}
+      }
+
       const response = await fetch(`${API_URL}/api/ai/generate-shape`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
         body: JSON.stringify({ prompt: aiPrompt })
       });
 

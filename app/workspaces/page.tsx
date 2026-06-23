@@ -45,9 +45,12 @@ export default function WorkspacesPage() {
         });
         
         if (wsRes.status === 401) {
-          throw new Error("Unauthorized");
+          localStorage.removeItem("user_session");
+          setStatus("unauthorized");
+          setTimeout(() => router.push("/"), 2500);
+          return;
         }
-        
+
         const wsData = await wsRes.json();
         const firstWorkspace = wsData.data?.[0];
         
@@ -65,9 +68,7 @@ export default function WorkspacesPage() {
         setStatus("authorized");
       } catch (err) {
         console.error("Gagal mengambil data:", err);
-        localStorage.removeItem("user_session");
-        setStatus("unauthorized");
-        setTimeout(() => router.push("/"), 2500);
+        // Do not force logout on general network errors
       }
     };
 

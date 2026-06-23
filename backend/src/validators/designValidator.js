@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
-// Design config object — maps directly to frontend useDesignCanvas state
-const designConfigSchema = z.object({
+// Design config for the design page (pattern-based editor)
+const designPageConfigSchema = z.object({
   body: z.string().min(1, "body is required."),
   sleeves: z.string().min(1, "sleeves is required."),
   necklines: z.string().min(1, "necklines is required."),
@@ -11,6 +11,14 @@ const designConfigSchema = z.object({
     .regex(/^#([0-9A-Fa-f]{3,8})$/, "primaryColor must be a valid hex color (e.g. #FFFFFF)."),
   pattern: z.string().nullable().optional(),
 });
+
+// Canvas config for the canvas page (free-form layers)
+const canvasPageConfigSchema = z.object({
+  layers: z.array(z.any()),
+});
+
+// Config accepts either format
+const designConfigSchema = z.union([designPageConfigSchema, canvasPageConfigSchema]);
 
 const createDesignSchema = z.object({
   id_workspace: z
@@ -23,6 +31,7 @@ const createDesignSchema = z.object({
     .max(150, "Design name cannot exceed 150 characters."),
   deskripsi: z.string().max(500).optional().nullable(),
   config: designConfigSchema,
+  canvas_data: z.any().optional().nullable(),
 });
 
 const updateDesignSchema = z.object({
@@ -33,6 +42,7 @@ const updateDesignSchema = z.object({
     .optional(),
   deskripsi: z.string().max(500).optional().nullable(),
   config: designConfigSchema.optional(),
+  canvas_data: z.any().optional().nullable(),
 });
 
 module.exports = { createDesignSchema, updateDesignSchema };

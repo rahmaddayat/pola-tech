@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Upload, X } from "lucide-react";
 
 interface FabricUploadProps {
   onFabricApply: (patternUrl: string) => void;
@@ -12,6 +12,10 @@ interface FabricUploadProps {
 export default function FabricUpload({ onFabricApply, currentFabric, onFabricRemove }: FabricUploadProps) {
   const [preview, setPreview] = useState<string | null>(currentFabric);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPreview(currentFabric);
+  }, [currentFabric]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -74,6 +74,7 @@ export default function LandingPage() {
 
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planMsg, setPlanMsg] = useState<string | null>(null);
+  const [lastSelectedPlan, setLastSelectedPlan] = useState<string | null>(null);
 
   const handleSelectPlan = async (planKey: string) => {
     const sessionStr = localStorage.getItem("user_session");
@@ -83,6 +84,7 @@ export default function LandingPage() {
       return;
     }
     setSelectingPlan(planKey);
+    setLastSelectedPlan(planKey);
     try {
       const session = JSON.parse(sessionStr);
       const res = await fetch(`${API_URL}/api/plan`, {
@@ -319,7 +321,7 @@ export default function LandingPage() {
                   {selectingPlan === plan.key && <Loader2 size={16} className="animate-spin" />}
                   <span>{plan.buttonText}</span>
                 </button>
-                {planMsg && index === plans.findIndex(p => p.key === selectingPlan) && (
+                {planMsg && index === plans.findIndex(p => p.key === lastSelectedPlan) && (
                   <p className="text-xs text-center mt-2 text-emerald-600 font-medium">{planMsg}</p>
                 )}
               </div>

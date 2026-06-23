@@ -43,6 +43,12 @@ export default function CanvasDrawing({ plan, canvasData, onCanvasChange, isFull
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [selectedShape, setSelectedShape] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (canvasData) {
+      setShapes(canvasData);
+    }
+  }, [canvasData]);
+
   const canUse = plan === "business";
 
   // Draw all shapes on canvas

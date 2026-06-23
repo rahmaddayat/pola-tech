@@ -67,13 +67,14 @@ const createDesign = async (req, res, next) => {
       });
     }
 
-    // Check if name already exists in workspace
-    const existingDesign = await prisma.design.findFirst({
-      where: {
-        id_workspace,
-        nama_design: { equals: nama_design, mode: "insensitive" },
-      },
+    // Check if name already exists in workspace (case-insensitive for SQLite)
+    const allDesigns = await prisma.design.findMany({
+      where: { id_workspace },
+      select: { nama_design: true },
     });
+    const existingDesign = allDesigns.find(
+      (d) => d.nama_design.toLowerCase() === nama_design.toLowerCase()
+    );
 
     if (existingDesign) {
       return res.status(400).json({
@@ -136,12 +137,12 @@ const getDesigns = async (req, res, next) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
 
-    // Search
+    // Search (SQLite-compatible)
     const search = req.query.search?.trim() || "";
     const where = {
       id_workspace: workspaceId,
       ...(search && {
-        nama_design: { contains: search, mode: "insensitive" },
+        nama_design: { contains: search },
       }),
     };
 
@@ -264,14 +265,15 @@ const updateDesign = async (req, res, next) => {
       });
     }
 
-    // Check for duplicate name if name is being updated
+    // Check for duplicate name if name is being updated (case-insensitive for SQLite)
     if (nama_design !== undefined && nama_design !== existing.nama_design) {
-      const duplicate = await prisma.design.findFirst({
-        where: {
-          id_workspace: existing.id_workspace,
-          nama_design: { equals: nama_design, mode: "insensitive" },
-        },
+      const allDesigns = await prisma.design.findMany({
+        where: { id_workspace: existing.id_workspace },
+        select: { id_design: true, nama_design: true },
       });
+      const duplicate = allDesigns.find(
+        (d) => d.id_design !== designId && d.nama_design.toLowerCase() === nama_design.toLowerCase()
+      );
 
       if (duplicate) {
         return res.status(400).json({

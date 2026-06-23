@@ -6,6 +6,6 @@ const { chat, generateShape } = require("../controllers/aiController");
 
 // AI Chat is only for business users
 router.post("/chat", authenticate, checkPlan(["business"]), chat);
-router.post("/generate-shape", generateShape); // Open for now to make it easy to test
+router.post("/generate-shape", authenticate, generateShape);
 
 module.exports = router;

@@ -240,7 +240,7 @@ function DesignDashboardContent() {
             <div className="grid grid-cols-4 gap-3">
               {activeTool && Object.keys(toolOptions[activeTool]).map((optionKey) => (
                 <button key={optionKey} onClick={() => updatePart(activeTool, optionKey)}
-                  className={`flex flex-col items-center justify-center aspect-square rounded-lg border transition-all group ${states[activeTool.toLowerCase().replace("silhouettes", "body") as keyof typeof states] === optionKey ? "border-indigo-500 bg-indigo-50" : "bg-gray-50 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50"}`}>
+                  className={`flex flex-col items-center justify-center aspect-square rounded-lg border transition-all group ${states[activeTool.toLowerCase().replace("silhouettes", "body").replace("pockets", "pocket") as keyof typeof states] === optionKey ? "border-indigo-500 bg-indigo-50" : "bg-gray-50 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50"}`}>
                   <div className="w-8 h-8 bg-white rounded border border-gray-200 mb-2 flex items-center justify-center">
                     <Shirt size={14} className="text-gray-300 group-hover:text-indigo-400" />
                   </div>
@@ -355,7 +355,7 @@ function DesignDashboardContent() {
                     <button key={p.id} onClick={() => { updatePart("Pattern", p.id); setCustomFabric(null); }}
                       className={`flex items-center space-x-3 p-2 rounded-lg border transition-all group ${states.pattern === p.id ? "border-indigo-500 bg-indigo-50" : "bg-gray-50 border-gray-100 hover:bg-indigo-50 hover:border-indigo-200"}`}>
                       <div className="w-8 h-8 rounded border border-gray-200 flex-shrink-0 overflow-hidden bg-white">
-                        <svg width="100%" height="100%"><rect width="100%" height="100%" fill={`url(#${p.id})`} /></svg>
+                        <svg width="100%" height="100%"><rect width="100%" height="100%" fill={states.primaryColor || "#6366f1"} opacity={0.3} /><text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="6" fill="#666">P</text></svg>
                       </div>
                       <span className={`text-[10px] font-semibold truncate ${states.pattern === p.id ? "text-indigo-600" : "text-gray-600"}`}>{p.name}</span>
                     </button>

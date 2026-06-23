@@ -13,21 +13,4 @@ const projects = [
     { id: 3, title: "Blazer Casual", date: "15-03-2025" },
 ];
 
-const DUMMY_USERS = [
-  {
-    id: "1",
-    name: "Admin PolaTech",
-    email: "admin@polatech.com",
-    password: "password123", // Dalam realita, ini harus di-hash
-    avatar: "https://ui-avatars.com/api/?name=Admin+PolaTech",
-  },
-  {
-    id: "2",
-    name: "Desainer User",
-    email: "user@example.com",
-    password: "user789",
-    avatar: "https://ui-avatars.com/api/?name=Desainer+User",
-  }
-];
-
-export { templates, projects, DUMMY_USERS }
+export { templates, projects }
